@@ -15,6 +15,14 @@ class Tematicas_model extends CI_Model {
         return $query->result_array();
     }
 
+    public function get_tematica_by_id($id)
+    {
+        $this->db->select('id, tematica');
+        $this->db->from('tematicas');
+        $this->db->where('id', $id);
+        $query = $this->db->get();
+        return $query->row_array();
+    }
 }
 
 ?>
