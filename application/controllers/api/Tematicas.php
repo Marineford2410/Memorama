@@ -26,7 +26,20 @@ class Tematicas extends REST_Controller {
         } else {
             $this->response(NULL, REST_Controller::HTTP_NOT_FOUND); 
         }
+    }
 
+    public function get_all_post()
+    {
+        $data['tematicas'] = $this->tematicas_model->get_all();
+        // print_r($data);
+
+        if ($data) {
+            // $this->response($data, REST_Controller::HTTP_OK); 
+            $this->load->view('tematicas_view', $data);
+
+        } else {
+            $this->response(NULL, REST_Controller::HTTP_NOT_FOUND); 
+        }
     }
 
 }
