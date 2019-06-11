@@ -15,6 +15,7 @@ class Partidas extends REST_Controller {
         $this->load->helper(array('form', 'url'));
         $this->load->library('session');
         $this->load->model('partidas_model');
+        $this->load->model('movimientos_model');
     }
     
     public function index_get($id)
@@ -24,7 +25,7 @@ class Partidas extends REST_Controller {
         $this->load->view('partidas_form_view', $data);
     }
     
-    private function _fill_insert_data($tematica_id) {
+    private function _fill_insert_data_partida($tematica_id) {
         $this->load->helper('date');
         $data = array();
         $data['partida'] = $this->post('username');
@@ -36,6 +37,18 @@ class Partidas extends REST_Controller {
         return $data;
     }
     
+    private function _fill_insert_data_movimietos($movimiento, $carta, $partida_id) {
+        $this->load->helper('date');
+        $data = array();
+        $data['movimiento'] = $movimiento;
+        $data['carta'] = $carta;
+        $data['partida_id'] = $partida_id;
+        $data['status'] = 1;
+        $data['created_at'] = date('Y-m-d H:m:s');
+        $data['updated_at'] = date('Y-m-d H:m:s');
+        return $data;
+    }
+
     public function index_post($id)
     {
         $cartas = $this->post('num_cartas');
@@ -54,7 +67,7 @@ class Partidas extends REST_Controller {
         else
         {
             if (!$this->partidas_model->is_playing()) {
-                $partida = $this->_fill_insert_data($id);
+                $partida = $this->_fill_insert_data_partida($id);
                 $insertado = $this->partidas_model->insert($partida);
 
                 if ($insertado) {
@@ -71,6 +84,17 @@ class Partidas extends REST_Controller {
         }
     }
 
+    private function _guardar_movimineto($mov, $clck)
+    {
+        $movimiento = $this->_fill_insert_data_movimietos(
+            $mov,
+            $this->session->userdata('cartas')[($clck - 1)],
+            $this->partidas_model->is_playing()['id']
+        );
+        
+        $this->movimientos_model->insert($movimiento);
+    }
+
     public function juego_post()
     {
         if (!empty($this->session->userdata('cartas'))) {
@@ -81,6 +105,9 @@ class Partidas extends REST_Controller {
                 $data['cartas'] = $this->session->userdata('cartas');
                 $data['click1'] = array_key_first($click1) + 1;
                 $data['click2'] = NULL;
+
+                $this->_guardar_movimineto(1,  $data['click1']);
+
                 $this->load->view('partida_view', $data);
             }
             else {
@@ -89,6 +116,8 @@ class Partidas extends REST_Controller {
                 $data['cartas'] = $this->session->userdata('cartas');
                 $data['click1'] = array_key_first($_SESSION['click']) + 1;
                 $data['click2'] = array_key_first($click2) + 1;
+
+                $this->_guardar_movimineto(1,  $data['click2']);
             
                 $nueva_baraja = $this->session->userdata('cartas');
                 
@@ -97,6 +126,7 @@ class Partidas extends REST_Controller {
                 
                 
                 if ($nueva_baraja[$valor1] == $nueva_baraja[$valor2]) {
+                    $this->_guardar_movimineto(2,  $data['click1']);
                     $s_nuevo = $this->remover($nueva_baraja[$valor1], $nueva_baraja);
                     $s_baraja = array(
                         'cartas' => $s_nuevo,
@@ -128,7 +158,7 @@ class Partidas extends REST_Controller {
         $data['status'] = -1;
         $data['updated_at'] = date('Y-m-d H:m:s');
         
-        if ($this->partidas_model->end_partida($data)) {
+        if (($this->partidas_model->end_partida($data) && ($this->movimientos_model->end_movimientos($data)))) {
             $this->session->sess_destroy();
             $this->load->view('finalizar_juego_view');            
         } 
@@ -138,6 +168,7 @@ class Partidas extends REST_Controller {
             $this->load->view('errors/html/error_db', $data);
         }
         
+
 
     }
 
@@ -169,6 +200,7 @@ class Partidas extends REST_Controller {
         
         $this->session->set_userdata($s_baraja);
     }
+
 
 }
 

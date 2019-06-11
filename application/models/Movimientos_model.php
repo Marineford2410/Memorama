@@ -2,7 +2,7 @@
 
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Partidas_model extends CI_Model {
+class Movimientos_model extends CI_Model {
     
     public function __construct() {
         parent::__construct();
@@ -15,6 +15,12 @@ class Partidas_model extends CI_Model {
         } else {
             return NULL;
         }
+    }
+
+    public function end_movimientos($data)
+    {
+        $this->db->where('status', 1);
+        return $this->db->update('movimientos', $data);
     }
 }
 
